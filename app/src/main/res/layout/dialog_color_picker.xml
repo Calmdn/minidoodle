@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自定义颜色选择对话框布局 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 常见颜色面板，使用 GridLayout 展示 8 个常用颜色 -->
+    <GridLayout
+        android:id="@+id/colorSwatchContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="4"
+        android:rowCount="2"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/swatch1"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#000000" />
+
+        <Button
+            android:id="@+id/swatch2"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#FF0000" />
+
+        <Button
+            android:id="@+id/swatch3"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#00FF00" />
+
+        <Button
+            android:id="@+id/swatch4"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#0000FF" />
+
+        <Button
+            android:id="@+id/swatch5"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#FFFF00" />
+
+        <Button
+            android:id="@+id/swatch6"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#FF00FF" />
+
+        <Button
+            android:id="@+id/swatch7"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#00FFFF" />
+
+        <Button
+            android:id="@+id/swatch8"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_columnWeight="1"
+            android:background="#FFFFFF" />
+    </GridLayout>
+
+    <!-- 精确颜色输入区域，提供 RGB 分量输入 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+        <EditText
+            android:id="@+id/editR"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:hint="R"
+            android:inputType="number" />
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="wrap_content" />
+        <EditText
+            android:id="@+id/editG"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:hint="G"
+            android:inputType="number" />
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="wrap_content" />
+        <EditText
+            android:id="@+id/editB"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:hint="B"
+            android:inputType="number" />
+    </LinearLayout>
+
+    <!-- 或者可以直接输入十六进制颜色代码 -->
+    <EditText
+        android:id="@+id/editHex"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="十六进制颜色代码（如 #RRGGBB）"
+        android:inputType="text"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 确认与取消按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="取消" />
+        <Button
+            android:id="@+id/btnConfirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="确定"
+            android:layout_marginLeft="16dp" />
+    </LinearLayout>
+
+</LinearLayout>
