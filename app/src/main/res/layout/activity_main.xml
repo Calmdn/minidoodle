@@ -1,56 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modern UI layout: a drawing area on top and a bottom panel with three evenly spaced buttons -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
 
-    <com.k.minidoodle.DoodleView
-        android:id="@+id/doodleView"
+    <com.k.minidoodle.PaintView
+        android:id="@+id/paintView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#FFFFFF" />
+        android:background="#F8F8F8" />
 
     <LinearLayout
-        android:id="@+id/bottomPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center">
+        android:padding="8dp"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <View
+                android:id="@+id/colorPreview"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:background="@android:color/black"
+                android:layout_marginEnd="8dp" />
+
+            <ImageButton
+                android:id="@+id/colorPickerBtn"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@android:drawable/ic_menu_edit"
+                android:contentDescription="选择颜色"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <Button
-            android:id="@+id/btnColorPicker"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_weight="1"
+            android:id="@+id/undoBtn"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="颜色调节" />
-
-        <Space
-            android:layout_width="16dp"
-            android:layout_height="wrap_content" />
+            android:text="撤销"
+            android:layout_marginEnd="8dp" />
 
         <Button
-            android:id="@+id/btnClear"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_weight="1"
+            android:id="@+id/clearBtn"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="清屏" />
-
-        <Space
-            android:layout_width="16dp"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/btnSave"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="保存" />
-
+            android:text="清除" />
     </LinearLayout>
 </LinearLayout>
