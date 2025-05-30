@@ -21,7 +21,7 @@ public class PaintView extends View {
     private Path currentPath;
     private int currentColor;
 
-    // 存储路径和它们的颜色，用于撤销功能
+    // 存储路径和它们的颜色
     private List<PathWithColor> paths = new ArrayList<>();
 
     private static class PathWithColor {
@@ -113,10 +113,4 @@ public class PaintView extends View {
         invalidate();
     }
 
-    public void undo() {
-        if (paths.size() > 0) {
-            paths.remove(paths.size() - 1);
-            invalidate();
-        }
-    }
 }

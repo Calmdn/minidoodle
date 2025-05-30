@@ -30,14 +30,6 @@
             android:layout_marginEnd="4dp" />
 
         <Button
-            android:id="@+id/undoBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="撤销"
-            android:layout_marginEnd="4dp" />
-
-        <Button
             android:id="@+id/clearBtn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
