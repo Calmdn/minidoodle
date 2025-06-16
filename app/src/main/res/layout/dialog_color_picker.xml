@@ -1,177 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+    android:layout_width="320dp"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="20dp"
+    android:background="@drawable/dialog_background">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="选择颜色"
-        android:textSize="18sp"
+        android:text="自定义颜色"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="20dp" />
 
     <!-- 颜色预览 -->
     <View
-        android:id="@+id/colorPreviewInDialog"
+        android:id="@+id/colorPreview"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginBottom="16dp"
-        android:background="@android:color/black" />
+        android:layout_height="60dp"
+        android:background="#000000"
+        android:layout_marginBottom="20dp" />
 
-    <!-- 主流颜色预设 -->
+    <!-- RGB 滑块 -->
     <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="红色 (R)"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <SeekBar
+        android:id="@+id/redSeekBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="预设颜色"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:max="255"
+        android:progressTint="#FF5722"
+        android:thumbTint="#FF5722"
+        android:layout_marginBottom="12dp" />
 
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
-
-        <LinearLayout
-            android:id="@+id/presetColorsLayout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="8dp">
-            <!-- 预设颜色按钮会在代码中动态添加 -->
-        </LinearLayout>
-    </HorizontalScrollView>
-
-    <!-- RGB输入 -->
     <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="绿色 (G)"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <SeekBar
+        android:id="@+id/greenSeekBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="RGB值"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:max="255"
+        android:progressTint="#4CAF50"
+        android:thumbTint="#4CAF50"
+        android:layout_marginBottom="12dp" />
 
-    <LinearLayout
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="蓝色 (B)"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <SeekBar
+        android:id="@+id/blueSeekBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
-
-        <TextView
-            android:layout_width="20dp"
-            android:layout_height="wrap_content"
-            android:text="R"
-            android:textColor="#FF0000"
-            android:textStyle="bold" />
-
-        <SeekBar
-            android:id="@+id/redSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:max="255" />
-
-        <EditText
-            android:id="@+id/redEditText"
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:maxLength="3"
-            android:text="0" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
-
-        <TextView
-            android:layout_width="20dp"
-            android:layout_height="wrap_content"
-            android:text="G"
-            android:textColor="#00FF00"
-            android:textStyle="bold" />
-
-        <SeekBar
-            android:id="@+id/greenSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:max="255" />
-
-        <EditText
-            android:id="@+id/greenEditText"
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:maxLength="3"
-            android:text="0" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
-
-        <TextView
-            android:layout_width="20dp"
-            android:layout_height="wrap_content"
-            android:text="B"
-            android:textColor="#0000FF"
-            android:textStyle="bold" />
-
-        <SeekBar
-            android:id="@+id/blueSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:max="255" />
-
-        <EditText
-            android:id="@+id/blueEditText"
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:maxLength="3"
-            android:text="0" />
-    </LinearLayout>
+        android:max="255"
+        android:progressTint="#2196F3"
+        android:thumbTint="#2196F3"
+        android:layout_marginBottom="16dp" />
 
     <!-- 十六进制输入 -->
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="十六进制值"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:text="十六进制代码"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
 
-    <LinearLayout
+    <EditText
+        android:id="@+id/hexEditText"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+        android:layout_height="48dp"
+        android:background="@drawable/edittext_background"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#CCCCCC"
+        android:hint="输入6位颜色代码"
+        android:maxLength="6"
+        android:inputType="textCapCharacters"
+        android:padding="12dp"
+        android:layout_marginBottom="20dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="#"
-            android:textStyle="bold"
-            android:textSize="18sp" />
-
-        <EditText
-            android:id="@+id/hexEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:digits="0123456789ABCDEFabcdef"
-            android:inputType="textVisiblePassword"
-            android:maxLength="6"
-            android:text="000000" />
-    </LinearLayout>
-
-    <!-- 确定/取消按钮 -->
+    <!-- 按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -180,17 +103,23 @@
         <Button
             android:id="@+id/cancelBtn"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="取消" />
+            android:text="取消"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/cancel_button_background"
+            android:layout_marginEnd="8dp" />
 
         <Button
             android:id="@+id/selectColorBtn"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="确定" />
+            android:text="确定"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/confirm_button_background"
+            android:layout_marginStart="8dp" />
+
     </LinearLayout>
+
 </LinearLayout>

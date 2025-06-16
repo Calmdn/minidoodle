@@ -1,32 +1,40 @@
 package com.k.minidoodle;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.GridLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -35,137 +43,312 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private PaintView paintView;
+    private ScrollView sidePanel;
+    private ImageButton menuButton;
+    private View overlay;
+    private boolean isPanelOpen = false;
+
+    // 工具控件
+    private SeekBar brushSizeSeekBar;
+    private TextView brushSizeText;
+    private LinearLayout brushTypeContainer;
+    private GridLayout colorPalette;
+
+    // 当前设置
     private int currentColor = Color.BLACK;
     private static final int PERMISSION_REQUEST_CODE = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 隐藏标题栏和状态栏，创建沉浸式全屏体验
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
         setContentView(R.layout.activity_main);
 
+        initViews();
+        setupListeners();
+        setupColorPalette();
+        setupBrushTypes();
+    }
+
+    private void initViews() {
         paintView = findViewById(R.id.paintView);
+        sidePanel = findViewById(R.id.sidePanel);
+        menuButton = findViewById(R.id.menuButton);
+        overlay = findViewById(R.id.overlay);
+        brushSizeSeekBar = findViewById(R.id.brushSizeSeekBar);
+        brushSizeText = findViewById(R.id.brushSizeText);
+        brushTypeContainer = findViewById(R.id.brushTypeContainer);
+        colorPalette = findViewById(R.id.colorPalette);
 
-        // 设置颜色选择按钮
-        Button colorBtn = findViewById(R.id.colorBtn);
-        colorBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showColorPickerDialog();
-            }
-        });
+        // 初始化画笔大小
+        updateBrushSizeDisplay();
 
-        // 设置撤销按钮
-        Button undoBtn = findViewById(R.id.undoBtn);
-        undoBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                paintView.undo();
-            }
-        });
+        // 初始化侧边栏位置
+        sidePanel.setTranslationX(-dpToPx(350));
 
-        // 设置清除按钮
-        Button clearBtn = findViewById(R.id.clearBtn);
-        clearBtn.setOnClickListener(new View.OnClickListener() {
+        // 确保ScrollView能够正常滚动
+        sidePanel.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                paintView.clear();
-            }
-        });
-
-        // 设置保存按钮
-        Button saveBtn = findViewById(R.id.saveBtn);
-        saveBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (checkPermission()) {
-                    saveDrawing();
-                } else {
-                    requestPermission();
-                }
+            public boolean onTouch(View v, MotionEvent event) {
+                // 让ScrollView处理触摸事件
+                v.getParent().requestDisallowInterceptTouchEvent(true);
+                return false;
             }
         });
     }
 
-    private void showColorPickerDialog() {
+    private void setupListeners() {
+        // 菜单按钮点击事件
+        menuButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleSidePanel();
+            }
+        });
+
+        // 覆盖层点击事件 - 点击画布区域关闭侧边栏
+        overlay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isPanelOpen) {
+                    closeSidePanel();
+                }
+            }
+        });
+
+        // 防止覆盖层拦截侧边栏的触摸事件
+        overlay.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                float x = event.getX();
+                // 如果触摸在侧边栏区域内，不处理事件
+                if (isPanelOpen && x < dpToPx(340)) {
+                    return false;
+                }
+                // 否则关闭侧边栏
+                if (isPanelOpen) {
+                    closeSidePanel();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        // 画笔大小调节
+        brushSizeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    float brushSize = progress + 1; // 1-100
+                    paintView.setStrokeWidth(brushSize);
+                    updateBrushSizeDisplay();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // 工具按钮点击事件
+        findViewById(R.id.undoButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                paintView.undo();
+                showToast("已撤销");
+            }
+        });
+
+        findViewById(R.id.clearButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                paintView.clear();
+                showToast("画布已清空");
+            }
+        });
+
+        findViewById(R.id.saveButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveDrawing();
+            }
+        });
+
+        // 高级颜色选择器按钮
+        findViewById(R.id.advancedColorButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showAdvancedColorPicker();
+            }
+        });
+    }
+
+    private void setupColorPalette() {
+        int[] colors = {
+                Color.BLACK, Color.RED, Color.GREEN, Color.BLUE,
+                Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.GRAY,
+                Color.rgb(255, 165, 0), // 橙色
+                Color.rgb(128, 0, 128), // 紫色
+                Color.rgb(255, 192, 203), // 粉色
+                Color.rgb(139, 69, 19), // 棕色
+                Color.rgb(255, 105, 180), // 热粉色
+                Color.rgb(0, 191, 255), // 深天蓝
+                Color.rgb(50, 205, 50), // 酸橙绿
+                Color.rgb(255, 69, 0) // 橙红色
+        };
+
+        for (int color : colors) {
+            View colorView = createColorView(color);
+            colorPalette.addView(colorView);
+        }
+    }
+
+    private View createColorView(final int color) {
+        View colorView = new View(this);
+        GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+        params.width = dpToPx(34);
+        params.height = dpToPx(34);
+        params.setMargins(dpToPx(3), dpToPx(3), dpToPx(3), dpToPx(3));
+        colorView.setLayoutParams(params);
+
+        // 创建圆形背景
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.OVAL);
+        drawable.setColor(color);
+        drawable.setStroke(dpToPx(2), Color.WHITE);
+        colorView.setBackground(drawable);
+
+        colorView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectColor(color);
+                showToast("颜色已选择");
+            }
+        });
+
+        return colorView;
+    }
+
+    private void setupBrushTypes() {
+        String[] brushNames = {"画笔", "荧光笔", "钢笔", "毛笔", "橡皮擦"};
+        PaintView.BrushType[] brushTypes = {
+                PaintView.BrushType.NORMAL,
+                PaintView.BrushType.HIGHLIGHTER,
+                PaintView.BrushType.PEN,
+                PaintView.BrushType.BRUSH,
+                PaintView.BrushType.ERASER
+        };
+
+        for (int i = 0; i < brushNames.length; i++) {
+            Button brushButton = createBrushTypeButton(brushNames[i], brushTypes[i]);
+            brushTypeContainer.addView(brushButton);
+        }
+    }
+
+    private Button createBrushTypeButton(String name, final PaintView.BrushType brushType) {
+        Button button = new Button(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dpToPx(40)
+        );
+        params.setMargins(0, dpToPx(2), 0, dpToPx(2));
+        button.setLayoutParams(params);
+
+        button.setText(name);
+        button.setTextColor(Color.WHITE);
+        button.setTextSize(14);
+        button.setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6));
+
+        // 创建按钮背景
+        updateButtonBackground(button, false);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectBrushType(brushType, (Button) v);
+                showToast("已选择 " + ((Button) v).getText());
+            }
+        });
+
+        // 默认选中画笔
+        if (brushType == PaintView.BrushType.NORMAL) {
+            updateButtonBackground(button, true);
+        }
+
+        return button;
+    }
+
+    private void updateButtonBackground(Button button, boolean selected) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.RECTANGLE);
+        drawable.setCornerRadius(dpToPx(5));
+        if (selected) {
+            drawable.setColor(Color.parseColor("#4CAF50"));
+        } else {
+            drawable.setColor(Color.parseColor("#546E7A"));
+        }
+        button.setBackground(drawable);
+    }
+
+    private void selectColor(int color) {
+        currentColor = color;
+        paintView.setColor(color);
+
+        // 更新颜色选择视觉反馈
+        for (int i = 0; i < colorPalette.getChildCount(); i++) {
+            View child = colorPalette.getChildAt(i);
+            child.setScaleX(1.0f);
+            child.setScaleY(1.0f);
+        }
+    }
+
+    private void selectBrushType(PaintView.BrushType brushType, Button selectedButton) {
+        paintView.setBrushType(brushType);
+
+        // 更新按钮选中状态
+        for (int i = 0; i < brushTypeContainer.getChildCount(); i++) {
+            View child = brushTypeContainer.getChildAt(i);
+            if (child instanceof Button) {
+                updateButtonBackground((Button) child, false);
+            }
+        }
+        updateButtonBackground(selectedButton, true);
+    }
+
+    private void showAdvancedColorPicker() {
         final Dialog dialog = new Dialog(MainActivity.this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_color_picker);
         dialog.setCancelable(true);
 
         // 获取视图引用
-        final View colorPreviewInDialog = dialog.findViewById(R.id.colorPreviewInDialog);
+        final View colorPreview = dialog.findViewById(R.id.colorPreview);
         final SeekBar redSeekBar = dialog.findViewById(R.id.redSeekBar);
         final SeekBar greenSeekBar = dialog.findViewById(R.id.greenSeekBar);
         final SeekBar blueSeekBar = dialog.findViewById(R.id.blueSeekBar);
-        final EditText redEditText = dialog.findViewById(R.id.redEditText);
-        final EditText greenEditText = dialog.findViewById(R.id.greenEditText);
-        final EditText blueEditText = dialog.findViewById(R.id.blueEditText);
         final EditText hexEditText = dialog.findViewById(R.id.hexEditText);
-        final LinearLayout presetColorsLayout = dialog.findViewById(R.id.presetColorsLayout);
-
         Button selectBtn = dialog.findViewById(R.id.selectColorBtn);
         Button cancelBtn = dialog.findViewById(R.id.cancelBtn);
 
-        // 设置预设颜色
-        int[] presetColors = {
-                Color.BLACK, Color.WHITE, Color.RED, Color.GREEN, Color.BLUE,
-                Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.GRAY,
-                Color.rgb(255, 165, 0), // 橙色
-                Color.rgb(128, 0, 128), // 紫色
-                Color.rgb(165, 42, 42), // 棕色
-                Color.rgb(255, 192, 203) // 粉色
-        };
+        // 初始化当前颜色
+        redSeekBar.setProgress(Color.red(currentColor));
+        greenSeekBar.setProgress(Color.green(currentColor));
+        blueSeekBar.setProgress(Color.blue(currentColor));
+        updateColorPreview(colorPreview, redSeekBar, greenSeekBar, blueSeekBar, hexEditText);
 
-        // 动态添加预设颜色按钮
-        for (final int presetColor : presetColors) {
-            final View colorView = new View(this);
-            int sizePx = (int) (40 * getResources().getDisplayMetrics().density); // 40dp
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(sizePx, sizePx);
-            params.setMargins(10, 10, 10, 10);
-            colorView.setLayoutParams(params);
-            colorView.setBackgroundColor(presetColor);
-
-            // 添加点击事件
-            colorView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    updateColorControls(presetColor, redSeekBar, greenSeekBar, blueSeekBar,
-                            redEditText, greenEditText, blueEditText, hexEditText, colorPreviewInDialog);
-                }
-            });
-
-            presetColorsLayout.addView(colorView);
-        }
-
-        // 初始化为当前颜色
-        updateColorControls(currentColor, redSeekBar, greenSeekBar, blueSeekBar,
-                redEditText, greenEditText, blueEditText, hexEditText, colorPreviewInDialog);
-
-        // 设置SeekBar监听器
-        SeekBar.OnSeekBarChangeListener seekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
+        // SeekBar监听器
+        SeekBar.OnSeekBarChangeListener colorChangeListener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    int red = redSeekBar.getProgress();
-                    int green = greenSeekBar.getProgress();
-                    int blue = blueSeekBar.getProgress();
-
-                    // 更新EditText
-                    if (seekBar == redSeekBar) {
-                        redEditText.setText(String.valueOf(red));
-                    } else if (seekBar == greenSeekBar) {
-                        greenEditText.setText(String.valueOf(green));
-                    } else if (seekBar == blueSeekBar) {
-                        blueEditText.setText(String.valueOf(blue));
-                    }
-
-                    // 更新十六进制
-                    String hex = String.format("%02X%02X%02X", red, green, blue);
-                    hexEditText.setText(hex);
-
-                    // 更新颜色预览
-                    int color = Color.rgb(red, green, blue);
-                    colorPreviewInDialog.setBackgroundColor(color);
+                    updateColorPreview(colorPreview, redSeekBar, greenSeekBar, blueSeekBar, hexEditText);
                 }
             }
 
@@ -176,133 +359,48 @@ public class MainActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {}
         };
 
-        redSeekBar.setOnSeekBarChangeListener(seekBarChangeListener);
-        greenSeekBar.setOnSeekBarChangeListener(seekBarChangeListener);
-        blueSeekBar.setOnSeekBarChangeListener(seekBarChangeListener);
+        redSeekBar.setOnSeekBarChangeListener(colorChangeListener);
+        greenSeekBar.setOnSeekBarChangeListener(colorChangeListener);
+        blueSeekBar.setOnSeekBarChangeListener(colorChangeListener);
 
-        // 设置EditText监听器 - RGB
-        TextWatcher rgbTextWatcher = new TextWatcher() {
+        // 十六进制输入监听
+        hexEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                try {
-                    int red = getValidColorValue(redEditText.getText().toString());
-                    int green = getValidColorValue(greenEditText.getText().toString());
-                    int blue = getValidColorValue(blueEditText.getText().toString());
-
-                    // 更新SeekBar（避免无限循环）
-                    redSeekBar.setProgress(red);
-                    greenSeekBar.setProgress(green);
-                    blueSeekBar.setProgress(blue);
-
-                    // 更新十六进制
-                    String hex = String.format("%02X%02X%02X", red, green, blue);
-                    hexEditText.setText(hex);
-
-                    // 更新颜色预览
-                    int color = Color.rgb(red, green, blue);
-                    colorPreviewInDialog.setBackgroundColor(color);
-                } catch (NumberFormatException e) {
-                    // 处理无效输入
-                }
-            }
-        };
-
-        redEditText.addTextChangedListener(rgbTextWatcher);
-        greenEditText.addTextChangedListener(rgbTextWatcher);
-        blueEditText.addTextChangedListener(rgbTextWatcher);
-
-        // 设置EditText监听器 - 十六进制（简化版）
-        hexEditText.addTextChangedListener(new TextWatcher() {
-            private boolean isUpdating = false;
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // 不需要实现
-            }
-
-            @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // 不需要实现
+                if (s.length() == 6) {
+                    try {
+                        int color = Color.parseColor("#" + s.toString());
+                        redSeekBar.setProgress(Color.red(color));
+                        greenSeekBar.setProgress(Color.green(color));
+                        blueSeekBar.setProgress(Color.blue(color));
+                        colorPreview.setBackgroundColor(color);
+                    } catch (IllegalArgumentException e) {
+                        // 无效颜色代码
+                    }
+                }
             }
 
             @Override
-            public void afterTextChanged(Editable s) {
-                if (isUpdating) return;
-
-                isUpdating = true;
-
-                try {
-                    String hexInput = s.toString();
-
-                    // 直接使用用户输入，只在预览颜色时临时补全
-                    if (hexInput.length() > 0) {
-                        // 临时创建一个6位的十六进制值用于解析
-                        StringBuilder tempHex = new StringBuilder(hexInput);
-                        while (tempHex.length() < 6) {
-                            tempHex.append("0");
-                        }
-
-                        // 更新颜色预览
-                        int color = Color.parseColor("#" + tempHex.toString());
-                        colorPreviewInDialog.setBackgroundColor(color);
-
-                        // 只在用户输入完整的6位十六进制时更新RGB值
-                        if (hexInput.length() == 6) {
-                            int red = Color.red(color);
-                            int green = Color.green(color);
-                            int blue = Color.blue(color);
-
-                            redSeekBar.setProgress(red);
-                            greenSeekBar.setProgress(green);
-                            blueSeekBar.setProgress(blue);
-
-                            redEditText.setText(String.valueOf(red));
-                            greenEditText.setText(String.valueOf(green));
-                            blueEditText.setText(String.valueOf(blue));
-                        }
-                    }
-                } catch (Exception e) {
-                    // 无效的十六进制值，不做特殊处理
-                    // 让用户继续输入
-                }
-
-                isUpdating = false;
-            }
+            public void afterTextChanged(Editable s) {}
         });
 
-        // 设置确定按钮
         selectBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                int red = redSeekBar.getProgress();
-                int green = greenSeekBar.getProgress();
-                int blue = blueSeekBar.getProgress();
-
-                currentColor = Color.rgb(red, green, blue);
-                paintView.setPathColor(currentColor);
-
-                // 更新颜色按钮的背景色，以显示当前选择的颜色
-                Button colorBtn = findViewById(R.id.colorBtn);
-                colorBtn.setBackgroundColor(currentColor);
-
-                // 如果颜色较深，则使用白色文本
-                if (red + green + blue < 384) { // 384 = 3*128
-                    colorBtn.setTextColor(Color.WHITE);
-                } else {
-                    colorBtn.setTextColor(Color.BLACK);
-                }
-
+                int selectedColor = Color.rgb(
+                        redSeekBar.getProgress(),
+                        greenSeekBar.getProgress(),
+                        blueSeekBar.getProgress()
+                );
+                selectColor(selectedColor);
+                showToast("自定义颜色已选择");
                 dialog.dismiss();
             }
         });
 
-        // 设置取消按钮
         cancelBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -313,75 +411,123 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // 保存绘图
+    private void updateColorPreview(View colorPreview, SeekBar red, SeekBar green, SeekBar blue, EditText hexEditText) {
+        int color = Color.rgb(red.getProgress(), green.getProgress(), blue.getProgress());
+        colorPreview.setBackgroundColor(color);
+        String hex = String.format("%06X", (0xFFFFFF & color));
+        hexEditText.setText(hex);
+    }
+
+    private void toggleSidePanel() {
+        if (isPanelOpen) {
+            closeSidePanel();
+        } else {
+            openSidePanel();
+        }
+    }
+
+    private void openSidePanel() {
+        sidePanel.setVisibility(View.VISIBLE);
+        overlay.setVisibility(View.VISIBLE);
+
+        // 平滑滑出动画
+        ObjectAnimator panelAnimator = ObjectAnimator.ofFloat(sidePanel, "translationX",
+                -dpToPx(350), 0);
+        panelAnimator.setDuration(350);
+        panelAnimator.setInterpolator(new DecelerateInterpolator());
+        panelAnimator.start();
+
+        // 覆盖层淡入
+        ObjectAnimator overlayAnimator = ObjectAnimator.ofFloat(overlay, "alpha", 0f, 0.5f);
+        overlayAnimator.setDuration(350);
+        overlayAnimator.start();
+
+        // 菜单按钮旋转
+        menuButton.animate().rotation(90).setDuration(350).start();
+
+        isPanelOpen = true;
+    }
+
+    private void closeSidePanel() {
+        // 平滑滑入动画
+        ObjectAnimator panelAnimator = ObjectAnimator.ofFloat(sidePanel, "translationX",
+                0, -dpToPx(350));
+        panelAnimator.setDuration(350);
+        panelAnimator.setInterpolator(new DecelerateInterpolator());
+        panelAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                sidePanel.setVisibility(View.GONE);
+            }
+        });
+        panelAnimator.start();
+
+        // 覆盖层淡出
+        ObjectAnimator overlayAnimator = ObjectAnimator.ofFloat(overlay, "alpha", 0.5f, 0f);
+        overlayAnimator.setDuration(350);
+        overlayAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                overlay.setVisibility(View.GONE);
+            }
+        });
+        overlayAnimator.start();
+
+        // 菜单按钮还原
+        menuButton.animate().rotation(0).setDuration(350).start();
+
+        isPanelOpen = false;
+    }
+
+    private void updateBrushSizeDisplay() {
+        int size = (int) paintView.getStrokeWidth();
+        brushSizeText.setText(size + "px");
+        brushSizeSeekBar.setProgress(size - 1);
+    }
+
     private void saveDrawing() {
-        Bitmap bitmap = Bitmap.createBitmap(paintView.getWidth(), paintView.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        paintView.draw(canvas);
+        if (checkPermission()) {
+            performSave();
+        } else {
+            requestPermission();
+        }
+    }
 
-        // 生成文件名
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
-        String fileName = "MiniDoodle_" + sdf.format(new Date()) + ".png";
+    private void performSave() {
+        try {
+            Bitmap bitmap = paintView.getCanvasBitmap();
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = "Doodle_" + timeStamp + ".png";
 
-        // 保存图片
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10及以上使用MediaStore
             ContentValues values = new ContentValues();
             values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
             values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/MiniDoodle");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MiniDoodle");
 
             Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
             if (uri != null) {
-                try (OutputStream os = getContentResolver().openOutputStream(uri)) {
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
-                    Toast.makeText(MainActivity.this, "图片已保存到相册", Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    Toast.makeText(MainActivity.this, "保存失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                OutputStream outputStream = getContentResolver().openOutputStream(uri);
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+                outputStream.close();
+                showToast("作品已保存到相册");
             }
-        } else {
-            // Android 9及以下使用传统文件存储
-            File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-            File miniDoodleDir = new File(picturesDir, "MiniDoodle");
-            if (!miniDoodleDir.exists()) {
-                miniDoodleDir.mkdirs();
-            }
-
-            File file = new File(miniDoodleDir, fileName);
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                Toast.makeText(MainActivity.this, "图片已保存到相册", Toast.LENGTH_SHORT).show();
-
-                // 通知图库更新
-                MediaStore.Images.Media.insertImage(getContentResolver(), file.getAbsolutePath(), fileName, null);
-            } catch (Exception e) {
-                Toast.makeText(MainActivity.this, "保存失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
+        } catch (Exception e) {
+            showToast("保存失败：" + e.getMessage());
         }
     }
 
-    // 检查存储权限
     private boolean checkPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10及以上使用分区存储，无需特殊权限
             return true;
-        } else {
-            // 检查外部存储写入权限
-            return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED;
         }
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
-    // 请求存储权限
     private void requestPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    PERMISSION_REQUEST_CODE
-            );
-        }
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                PERMISSION_REQUEST_CODE);
     }
 
     @Override
@@ -389,48 +535,27 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                saveDrawing();
+                performSave();
             } else {
-                Toast.makeText(this, "需要存储权限才能保存图片", Toast.LENGTH_SHORT).show();
+                showToast("需要存储权限才能保存作品");
             }
         }
     }
 
-    // 辅助方法：更新所有颜色控件
-    private void updateColorControls(int color, SeekBar redSeekBar, SeekBar greenSeekBar,
-                                     SeekBar blueSeekBar, EditText redEditText, EditText greenEditText,
-                                     EditText blueEditText, EditText hexEditText, View colorPreview) {
-        int red = Color.red(color);
-        int green = Color.green(color);
-        int blue = Color.blue(color);
-
-        // 更新SeekBar
-        redSeekBar.setProgress(red);
-        greenSeekBar.setProgress(green);
-        blueSeekBar.setProgress(blue);
-
-        // 更新EditText
-        redEditText.setText(String.valueOf(red));
-        greenEditText.setText(String.valueOf(green));
-        blueEditText.setText(String.valueOf(blue));
-
-        // 更新十六进制
-        String hex = String.format("%02X%02X%02X", red, green, blue);
-        hexEditText.setText(hex);
-
-        // 更新颜色预览
-        colorPreview.setBackgroundColor(color);
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
-    // 辅助方法：获取有效的颜色值（0-255）
-    private int getValidColorValue(String input) {
-        try {
-            int value = Integer.parseInt(input);
-            if (value < 0) return 0;
-            if (value > 255) return 255;
-            return value;
-        } catch (NumberFormatException e) {
-            return 0;
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isPanelOpen) {
+            closeSidePanel();
+        } else {
+            super.onBackPressed();
         }
     }
 }

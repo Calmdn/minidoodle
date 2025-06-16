@@ -1,55 +1,191 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <!-- 全屏画布 -->
     <com.k.minidoodle.PaintView
         android:id="@+id/paintView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#F8F8F8" />
+        android:layout_height="match_parent"
+        android:background="#FFFFFF" />
 
-    <LinearLayout
+    <!-- 半透明覆盖层 -->
+    <View
+        android:id="@+id/overlay"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center">
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:alpha="0" />
 
-        <Button
-            android:id="@+id/colorBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="颜色"
-            android:layout_marginEnd="4dp" />
+    <!-- 侧边栏面板 - 可滚动 -->
+    <ScrollView
+        android:id="@+id/sidePanel"
+        android:layout_width="340dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/side_panel_background"
+        android:elevation="12dp"
+        android:visibility="gone"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:scrollbarStyle="insideOverlay"
+        android:scrollbarSize="4dp"
+        android:scrollbarThumbVertical="@drawable/scrollbar_thumb"
+        android:fillViewport="false"
+        android:overScrollMode="ifContentScrolls">
 
-        <Button
-            android:id="@+id/undoBtn"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="撤销"
-            android:layout_marginEnd="4dp" />
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:paddingBottom="24dp">
 
-        <Button
-            android:id="@+id/clearBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="清除"
-            android:layout_marginEnd="4dp" />
+            <!-- 画笔类型选择 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="画笔类型"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="10dp" />
 
-        <Button
-            android:id="@+id/saveBtn"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="保存" />
-    </LinearLayout>
-</LinearLayout>
+            <LinearLayout
+                android:id="@+id/brushTypeContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="20dp" />
+
+            <!-- 画笔大小调节 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="画笔大小"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="20dp">
+
+                <SeekBar
+                    android:id="@+id/brushSizeSeekBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="99"
+                    android:progress="11"
+                    android:progressTint="#4CAF50"
+                    android:thumbTint="#4CAF50" />
+
+                <TextView
+                    android:id="@+id/brushSizeText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="12px"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:layout_marginStart="10dp"
+                    android:minWidth="45dp" />
+            </LinearLayout>
+
+            <!-- 快速颜色选择 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="快速颜色"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <GridLayout
+                android:id="@+id/colorPalette"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="4"
+                android:layout_marginBottom="14dp" />
+
+            <!-- 高级颜色选择按钮 -->
+            <Button
+                android:id="@+id/advancedColorButton"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:text="自定义颜色"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:background="@drawable/advanced_color_button"
+                android:layout_marginBottom="20dp" />
+
+            <!-- 工具按钮 - 竖向排列 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="操作工具"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <Button
+                android:id="@+id/undoButton"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:text="撤销上一步"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:background="@drawable/tool_button_background"
+                android:layout_marginBottom="6dp" />
+
+            <Button
+                android:id="@+id/clearButton"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:text="清空画布"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:background="@drawable/tool_button_background"
+                android:layout_marginBottom="6dp" />
+
+            <Button
+                android:id="@+id/saveButton"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:text="保存作品"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:background="@drawable/save_button_background" />
+
+            <!-- 底部留白，确保最后一个元素能完全显示 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="20dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 菜单按钮 -->
+    <ImageButton
+        android:id="@+id/menuButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="20dp"
+        android:background="@drawable/menu_button_background"
+        android:src="@drawable/ic_menu"
+        android:contentDescription="菜单"
+        android:elevation="8dp" />
+
+</FrameLayout>
